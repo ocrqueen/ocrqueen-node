@@ -33,7 +33,7 @@ jobs:
         node: ["20", "22"]
     steps:
       # actions/checkout@v4.2.2
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
 
@@ -58,7 +58,7 @@ jobs:
     name: lint (biome)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
@@ -76,7 +76,7 @@ jobs:
     name: typecheck (tsc strict)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
@@ -93,7 +93,7 @@ jobs:
     name: build (tsup)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
