@@ -1,0 +1,44 @@
+# ── CodeQL — static analysis for security bugs ────────────────────────
+# Runs on push to main + every PR + a weekly cron. Free for public repos.
+# Mirror of the Python repo's setup, scanning JavaScript/TypeScript.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "37 3 * * 1" # 03:37 UTC every Monday (off-peak)
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      # github/codeql-action/init@v3.27.0
+      - uses: github/codeql-action/init@4f3212b61783c3c68e8309a0f18a699764811cda
+        with:
+          languages: ${{ matrix.language }}
+          # security-and-quality is a level above the default — broader
+          # set of queries catches the SDK-specific issues we care about.
+          queries: security-and-quality
+
+      - uses: github/codeql-action/analyze@4f3212b61783c3c68e8309a0f18a699764811cda
+        with:
+          category: "/language:${{ matrix.language }}"

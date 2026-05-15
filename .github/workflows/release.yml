@@ -1,0 +1,134 @@
+# ── Release — publishes a tagged version to npm with provenance ────────
+# How it works:
+#   1. Push a `v*.*.*` tag from main (`git tag v0.1.0 && git push --tags`).
+#   2. `build` re-runs CI gates, asserts package.json version matches the
+#      tag, then produces `dist/`.
+#   3. `publish` runs ONLY after `build` succeeds, ONLY in the `npm`
+#      GitHub Environment (manual approval). It requests an OIDC token,
+#      npm verifies it, and the package is published with provenance —
+#      Sigstore attestation that the artifact was built by THIS workflow
+#      and nobody else.
+#
+# What this prevents:
+#   - Stolen npm tokens (we don't have any)
+#   - A malicious PR triggering a release (workflow fires only on tags)
+#   - Tag-vs-package.json version mismatch
+#   - Cross-workflow OIDC token misuse (id-token: write only on publish)
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ── 1. Build ─────────────────────────────────────────────────────
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # actions/checkout@v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      # pnpm/action-setup@v4.0.0
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
+        with:
+          version: 10.4.1
+
+      # actions/setup-node@v4.1.0
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+        with:
+          node-version: "20"
+          # Configure npm registry for the publish step below.
+          registry-url: "https://registry.npmjs.org"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Defense in depth: tag and package.json disagree → fail.
+      # A typo in the tag could otherwise ship the wrong version number.
+      - name: Verify tag matches package.json version
+        run: |
+          set -euo pipefail
+          tag_version="${GITHUB_REF_NAME#v}"
+          file_version=$(node -p "require('./package.json').version")
+          echo "tag: $tag_version  package.json: $file_version"
+          if [ "$tag_version" != "$file_version" ]; then
+            echo "::error::tag ($tag_version) != package.json version ($file_version)"
+            exit 1
+          fi
+
+      - name: Run CI gates
+        run: |
+          pnpm test
+          pnpm lint
+          pnpm format:check
+          pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      # actions/upload-artifact@v4.4.3
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: package
+          path: |
+            dist/
+            package.json
+            README.md
+            LICENSE
+            SECURITY.md
+            CHANGELOG.md
+          retention-days: 7
+          if-no-files-found: error
+
+  # ── 2. Publish to npm with provenance ────────────────────────────
+  publish:
+    name: Publish to npm
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/ocrqueen
+    permissions:
+      # OIDC for provenance attestation.
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
+        with:
+          version: 10.4.1
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # `npm publish --provenance` reads OIDC, signs via Sigstore, and
+      # registers attestation on the npm registry. Users can verify with
+      # `npm audit signatures` or `npm view ocrqueen --json | jq .dist.attestations`.
+      - name: Publish
+        run: npm publish --provenance --access public

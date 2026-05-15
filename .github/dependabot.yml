@@ -1,0 +1,39 @@
+# ── Dependabot — auto-PRs to update vulnerable / outdated dependencies ─
+# Two ecosystems matter:
+#   1. npm (deps in package.json — dev only; we have zero runtime deps)
+#   2. github-actions (action versions in workflow YAML)
+#
+# Cadence: weekly. Security updates ship immediately regardless of this
+# schedule via "Dependabot security updates" enabled at the repo level.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: UTC
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - npm
+    groups:
+      npm-deps:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: UTC
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions

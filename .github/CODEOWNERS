@@ -1,0 +1,16 @@
+# ── CODEOWNERS — auto-request review on every PR ──────────────────────
+# Every file is reviewed by @iammilankhati by default. Add more
+# maintainers below as the team grows. Branch protection enforces the
+# Code Owner review automatically.
+
+# Catch-all
+*                          @iammilankhati
+
+# Security-sensitive files — call them out explicitly so future
+# co-maintainers can't reduce ownership without an explicit PR.
+.github/                   @iammilankhati
+src/_http.ts               @iammilankhati
+src/_errors.ts             @iammilankhati
+SECURITY.md                @iammilankhati
+package.json               @iammilankhati
+pnpm-lock.yaml             @iammilankhati
