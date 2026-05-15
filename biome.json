@@ -21,7 +21,8 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noUselessTypeConstraint": "error"
+        "noUselessTypeConstraint": "error",
+        "useLiteralKeys": "off"
       },
       "correctness": {
         "noUnusedVariables": "error",
