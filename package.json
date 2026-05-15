@@ -1,0 +1,66 @@
+{
+  "name": "ocrqueen",
+  "version": "0.0.0",
+  "description": "Official Node.js SDK for the OCRQueen document extraction API",
+  "license": "MIT",
+  "author": "OCRQueen <support@ocrqueen.com>",
+  "homepage": "https://ocrqueen.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ocrqueen/ocrqueen-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ocrqueen/ocrqueen-node/issues"
+  },
+  "keywords": ["ocrqueen", "ocr", "pdf", "pdf-extraction", "document-ai", "sdk", "typescript"],
+  "engines": {
+    "node": ">=20"
+  },
+  "//1": "── ESM + CJS dual export. Modern apps get the ESM build, older",
+  "//2": "── CJS apps get the require() build. Types apply to both.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "//3": "── Only files shipped to npm. Tests, configs, source maps stay home.",
+  "files": ["dist", "README.md", "LICENSE", "SECURITY.md", "CHANGELOG.md"],
+  "//4": "── Public scripts. CI runs the same names.",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format:check": "biome format .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "//5": "── Runtime deps: NONE. Native fetch + AbortSignal.timeout are",
+  "//6": "── enough. Zero runtime deps means zero supply-chain risk for",
+  "//7": "── users who install us (T5 in the threat model).",
+  "dependencies": {},
+  "//8": "── Dev deps pinned to ranges; lock file pins the exact version.",
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "//9": "── Force pnpm. npm/yarn would silently produce a different",
+  "//10": "── lock file and we'd lose reproducibility.",
+  "packageManager": "pnpm@10.4.1",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

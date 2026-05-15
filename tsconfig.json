@@ -1,0 +1,48 @@
+{
+  // ── Strict TypeScript ──────────────────────────────────────────────
+  // Mirrors `mypy --strict` on the Python side. Every flag here exists
+  // because the lax default cost a real customer a real bug at least
+  // once across the JS ecosystem.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
+    // Strict-mode group + the extras that strict doesn't enable.
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+
+    // Extra correctness flags. Each one has caught a real bug in
+    // similar SDKs.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Interop / output. tsup does the actual emit; tsc just typechecks.
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    // Pull in Node types only — no DOM, no Web Worker. Reduces the
+    // accidental "I called window in node" class of bugs.
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "tests"]
+}
