@@ -57,6 +57,9 @@
           "suspicious": {
             "noExplicitAny": "off",
             "noConsole": "off"
+          },
+          "performance": {
+            "noDelete": "off"
           }
         }
       }

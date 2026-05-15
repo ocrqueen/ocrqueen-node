@@ -7,4 +7,29 @@
  * Mirror of the Python SDK's `ocrqueen/__init__.py`.
  */
 
+export { OCRQueen } from "./_client.js";
+export type { OCRQueenOptions } from "./_client.js";
+
+export {
+  APIConnectionError,
+  APIError,
+  APITimeoutError,
+  AuthenticationError,
+  BadRequestError,
+  InsufficientBalanceError,
+  NotFoundError,
+  OCRQueenError,
+  PermissionDeniedError,
+  RateLimitError,
+  ServerError,
+  ValidationError,
+} from "./_errors.js";
+
+export type {
+  ExtractCreateOptions,
+  ExtractJob,
+  ExtractionProfile,
+  FileInput,
+} from "./resources/extract.js";
+
 export { VERSION } from "./version.js";
