@@ -1,0 +1,36 @@
+# ── Secrets (NEVER COMMIT) ────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials/
+api_keys.txt
+
+# ── Node ──────────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ── Build output ──────────────────────────────────────────────────
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# ── Testing / coverage ────────────────────────────────────────────
+coverage/
+.nyc_output/
+.vitest-cache/
+
+# ── Tooling ───────────────────────────────────────────────────────
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
