@@ -127,8 +127,18 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Upgrade npm to the version that supports Trusted Publishing
+      # (OIDC-only auth, no token). The npm 10 that ships with Node 20
+      # signs provenance but doesn't authenticate via OIDC for the
+      # actual PUT — every publish returns 404. npm 11.5+ adds the
+      # Trusted Publishing flow. We pin to a major to avoid silent
+      # surprises but accept patch updates.
+      - name: Upgrade npm to Trusted-Publishing-capable version
+        run: npm install -g npm@^11
+
       # `npm publish --provenance` reads OIDC, signs via Sigstore, and
-      # registers attestation on the npm registry. Users can verify with
-      # `npm audit signatures` or `npm view ocrqueen --json | jq .dist.attestations`.
+      # publishes via the Trusted Publisher binding registered on npm.
+      # Users can verify with `npm audit signatures` or
+      # `npm view ocrqueen --json | jq .dist.attestations`.
       - name: Publish
         run: npm publish --provenance --access public
