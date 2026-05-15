@@ -22,12 +22,14 @@
 import { HttpClient } from "./_http.js";
 import type { HttpClientOptions } from "./_http.js";
 import { ExtractResource } from "./resources/extract.js";
+import { JobsResource } from "./resources/jobs.js";
 
 export type OCRQueenOptions = HttpClientOptions;
 
 export class OCRQueen {
   readonly #http: HttpClient;
   #extract: ExtractResource | null = null;
+  #jobs: JobsResource | null = null;
 
   constructor(opts: OCRQueenOptions | undefined = undefined) {
     // Resolve apiKey + baseUrl from env when not passed explicitly.
@@ -56,5 +58,13 @@ export class OCRQueen {
       this.#extract = new ExtractResource(this.#http);
     }
     return this.#extract;
+  }
+
+  /** Job lifecycle — `get`, `list`, `cancel`, `wait`. */
+  get jobs(): JobsResource {
+    if (this.#jobs === null) {
+      this.#jobs = new JobsResource(this.#http);
+    }
+    return this.#jobs;
   }
 }

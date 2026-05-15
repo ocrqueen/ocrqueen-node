@@ -1,6 +1,6 @@
 {
   "name": "ocrqueen",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Official Node.js SDK for the OCRQueen document extraction API",
   "license": "MIT",
   "author": "OCRQueen <support@ocrqueen.com>",

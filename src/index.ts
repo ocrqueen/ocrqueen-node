@@ -32,4 +32,13 @@ export type {
   FileInput,
 } from "./resources/extract.js";
 
+export type {
+  JobList,
+  JobStatus,
+  ListJobsOptions,
+  WaitOptions,
+} from "./resources/jobs.js";
+
 export { VERSION } from "./version.js";
+export { verifyWebhook } from "./webhooks.js";
+export type { VerifyWebhookOptions } from "./webhooks.js";
