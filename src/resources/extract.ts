@@ -28,7 +28,12 @@ export interface ExtractCreateOptions {
   file: FileInput;
   /** `standard` ($0.005/page) or `advanced` ($0.015/page). */
   profile?: ExtractionProfile;
-  /** Extra `ExtractOptions` (callback_url, bypass_cache, …). Server validates. */
+  /**
+   * Extra `ExtractOptions` — `callback_url`, `bypass_cache`,
+   * `retain_hours`, `result_retain_hours` (0-168, defaults to
+   * `retain_hours`), `storage_destination_id`. Server validates.
+   * See /docs/data-retention for the retention-related options.
+   */
   options?: Record<string, unknown>;
   /** Stripe-style key — retrying with the same key returns the same job. */
   idempotencyKey?: string;

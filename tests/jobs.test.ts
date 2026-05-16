@@ -113,6 +113,24 @@ describe("jobs.cancel", () => {
   });
 });
 
+// ── purge ───────────────────────────────────────────────────────────
+
+describe("jobs.purge", () => {
+  it("POSTs to /v1/jobs/:id/purge and returns void", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const client = new OCRQueen({ apiKey: VALID_KEY });
+    const result = await client.jobs.purge("job_y");
+    expect(result).toBeUndefined();
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.method).toBe("POST");
+  });
+
+  it("rejects empty id", async () => {
+    const client = new OCRQueen({ apiKey: VALID_KEY });
+    await expect(client.jobs.purge("")).rejects.toThrow(/jobId is required/);
+  });
+});
+
 // ── wait ────────────────────────────────────────────────────────────
 
 describe("jobs.wait", () => {
