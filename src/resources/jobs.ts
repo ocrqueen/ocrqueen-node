@@ -109,6 +109,31 @@ export class JobsResource {
   }
 
   /**
+   * Hard-erase a job's source bytes + extracted content (GDPR erasure).
+   *
+   * Deletes the source file from object storage and clears the extracted
+   * result + request options from the database. The job row remains as a
+   * billing tombstone (id, customer, page count, timestamps) so usage
+   * reports stay accurate.
+   *
+   * Requires the `jobs:write` scope on the API key. Deliberately separate
+   * from `extract:write` so you can issue read-only keys to dashboards or
+   * pipelines that fetch results but cannot delete them.
+   *
+   * Idempotent — calling on an already-purged job is a no-op.
+   *
+   * @throws NotFoundError job doesn't exist (or belongs to another customer).
+   * @throws AuthenticationError key is missing the `jobs:write` scope.
+   */
+  async purge(jobId: string): Promise<void> {
+    if (!jobId) throw new ValidationError("jobId is required");
+    await this.#http.request({
+      method: "POST",
+      path: `/v1/jobs/${encodeURIComponent(jobId)}/purge`,
+    });
+  }
+
+  /**
    * Poll the job until it reaches a terminal status. The killer feature.
    *
    * No initial sleep — a job that's already done (cache hit) returns
