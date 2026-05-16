@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — 2026-05-16
+
+Metadata-only release. No runtime or API behaviour change.
+
+### Changed
+- Expanded `package.json` keywords from a PDF-focused set to cover every
+  supported format and use case: `pptx`, `powerpoint`, `presentation-extraction`,
+  `image-extraction`, `image-ocr`, `heic`, `pdf-to-json`, `pdf-to-markdown`,
+  `document-extraction`, `ocr-api`, `structured-extraction`, `rag`, `esm`.
+  npm search indexes keywords, not READMEs — so even though the README
+  documented all formats since v0.2.0, searches for "PPTX extraction npm" /
+  "HEIC OCR" still missed us. Fixes that.
+
 ## [0.2.0] — 2026-05-16
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "ocrqueen",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Official Node.js SDK for the OCRQueen document extraction API",
   "license": "MIT",
   "author": "OCRQueen <support@ocrqueen.com>",
@@ -12,7 +12,29 @@
   "bugs": {
     "url": "https://github.com/ocrqueen/ocrqueen-node/issues"
   },
-  "keywords": ["ocrqueen", "ocr", "pdf", "pdf-extraction", "document-ai", "sdk", "typescript"],
+  "keywords": [
+    "ocrqueen",
+    "ocr",
+    "ocr-api",
+    "document-extraction",
+    "document-ai",
+    "pdf",
+    "pdf-extraction",
+    "pdf-to-json",
+    "pdf-to-markdown",
+    "pptx",
+    "pptx-extraction",
+    "powerpoint",
+    "presentation-extraction",
+    "image-extraction",
+    "image-ocr",
+    "heic",
+    "structured-extraction",
+    "rag",
+    "sdk",
+    "typescript",
+    "esm"
+  ],
   "engines": {
     "node": ">=20"
   },
