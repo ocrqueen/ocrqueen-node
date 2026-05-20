@@ -211,6 +211,70 @@ describe("jobs.wait", () => {
   });
 });
 
+// ── fetchImage ─────────────────────────────────────────────────────
+
+describe("jobs.fetchImage", () => {
+  it("follows the 302 from the proxy to R2 and returns bytes", async () => {
+    const proxyUrl = "https://api.ocrqueen.com/v1/jobs/job_abc/figures/0";
+    const r2Url = "https://r2.example.com/x.jpg?signed=true";
+    const imgBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+    fetchMock.mockImplementation(async (url: string | URL) => {
+      const u = typeof url === "string" ? url : url.toString();
+      if (u.startsWith("https://api.ocrqueen.com/")) {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: r2Url },
+        });
+      }
+      if (u === r2Url) {
+        return new Response(imgBytes, { status: 200 });
+      }
+      throw new Error(`unexpected fetch URL: ${u}`);
+    });
+
+    const client = new OCRQueen({ apiKey: VALID_KEY });
+    const got = await client.jobs.fetchImage(proxyUrl);
+    expect(got).toEqual(imgBytes);
+  });
+
+  it("accepts a relative path too", async () => {
+    const r2Url = "https://r2.example.com/y.jpg?signed=true";
+    const imgBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+
+    fetchMock.mockImplementation(async (url: string | URL) => {
+      const u = typeof url === "string" ? url : url.toString();
+      if (u.endsWith("/v1/jobs/job_abc/images/blk_1")) {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: r2Url },
+        });
+      }
+      if (u === r2Url) {
+        return new Response(imgBytes, { status: 200 });
+      }
+      throw new Error(`unexpected fetch URL: ${u}`);
+    });
+
+    const client = new OCRQueen({ apiKey: VALID_KEY });
+    const got = await client.jobs.fetchImage("/v1/jobs/job_abc/images/blk_1");
+    expect(got).toEqual(imgBytes);
+  });
+
+  it("404 from the proxy → NotFoundError", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(404, { error: { code: "FIGURE_NOT_FOUND" } }));
+    const client = new OCRQueen({ apiKey: VALID_KEY });
+    await expect(client.jobs.fetchImage("/v1/jobs/job/figures/9")).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+  });
+
+  it("rejects empty input", async () => {
+    const client = new OCRQueen({ apiKey: VALID_KEY });
+    await expect(client.jobs.fetchImage("")).rejects.toBeInstanceOf(ValidationError);
+  });
+});
+
 // ── resource caching ───────────────────────────────────────────────
 
 describe("client.jobs", () => {

@@ -11,7 +11,7 @@
  * Mirror of the Python SDK's `resources/jobs.py`.
  */
 
-import { APITimeoutError, ValidationError } from "../_errors.js";
+import { APIConnectionError, APIError, APITimeoutError, ValidationError } from "../_errors.js";
 import type { HttpClient } from "../_http.js";
 import type { ExtractJob } from "./extract.js";
 
@@ -134,6 +134,76 @@ export class JobsResource {
   }
 
   /**
+   * Download bytes from an image-proxy URL referenced in an extraction result.
+   *
+   * The API emits stable proxy paths on patent figures
+   * (`drawings[i].image_url`) and general image blocks
+   * (`pages[].blocks[].url`) of the form
+   * `/v1/jobs/{job_id}/{figures|images}/{id}`. Hitting them with the
+   * SDK's API key returns a 302 redirect to a short-lived signed R2
+   * URL; this helper performs the two-step dance and returns the
+   * raw bytes as a `Uint8Array`. Accepts either a relative path or
+   * a full URL.
+   *
+   * @throws ValidationError empty / malformed URL
+   * @throws NotFoundError figure or image block doesn't exist
+   * @throws APIError unexpected status or non-redirect from the API
+   */
+  async fetchImage(urlOrPath: string): Promise<Uint8Array> {
+    if (!urlOrPath) {
+      throw new ValidationError("urlOrPath is required");
+    }
+    const path = proxyPath(urlOrPath);
+    // Security invariant I5: redirects are NOT auto-followed. The 302
+    // surfaces here so we can extract Location ourselves.
+    const response = await this.#http.request({
+      method: "GET",
+      path,
+    });
+    if (response.status >= 200 && response.status < 300) {
+      const buf = await response.arrayBuffer();
+      return new Uint8Array(buf);
+    }
+    if (response.status < 300 || response.status >= 400) {
+      throw new APIError(`image proxy returned unexpected status ${response.status}`, {
+        statusCode: response.status,
+        errorCode: undefined,
+        requestId: undefined,
+      });
+    }
+    const location = response.headers.get("location");
+    if (!location) {
+      throw new ValidationError(
+        `image proxy returned ${response.status} without a Location header`,
+      );
+    }
+    // The Location points at R2 (or another presigned host) — fetch
+    // bytes directly, without sending our API key.
+    let r2Response: Response;
+    try {
+      r2Response = await fetch(location, {
+        method: "GET",
+        signal: AbortSignal.timeout(60_000),
+        redirect: "manual",
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "TimeoutError") {
+        throw new APITimeoutError("image storage fetch timed out");
+      }
+      throw new APIConnectionError("image storage fetch failed");
+    }
+    if (r2Response.status !== 200) {
+      throw new APIError(`image storage returned ${r2Response.status}`, {
+        statusCode: r2Response.status,
+        errorCode: undefined,
+        requestId: undefined,
+      });
+    }
+    const buf = await r2Response.arrayBuffer();
+    return new Uint8Array(buf);
+  }
+
+  /**
    * Poll the job until it reaches a terminal status. The killer feature.
    *
    * No initial sleep — a job that's already done (cache hit) returns
@@ -198,4 +268,21 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+/**
+ * Return the path portion of an OCRQueen image-proxy URL. Callers may
+ * pass either `/v1/jobs/{id}/figures/0` or the full URL — we don't make
+ * them strip the origin themselves.
+ */
+function proxyPath(urlOrPath: string): string {
+  if (urlOrPath.startsWith("/")) {
+    return urlOrPath;
+  }
+  try {
+    const u = new URL(urlOrPath);
+    return u.pathname + (u.search || "");
+  } catch {
+    return `/${urlOrPath.replace(/^\/+/, "")}`;
+  }
 }
