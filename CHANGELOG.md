@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] — 2026-05-20
+
+Additive enum bump for Slice 12 — Patent Claims Parser. No SDK
+behavior change; SDK consumers gain forward-compat for the new
+warning codes the API now emits on `domain: "patent"` responses.
+
+### Added (via OpenAPI re-dump)
+- `PatentWarningCode.CLAIMS_REGION_EMPTY`
+- `PatentWarningCode.CLAIMS_EMPTY_BODIES_DETECTED`
+- `PatentWarningCode.RESCUE_HALLUCINATED_CLAIM_DROPPED`
+
+Plus additive schema additions (`AmendmentMarkupSpan`,
+`MPFStructureBinding`, `ClaimCategory` enum, `ClaimType.MULTI_DEPENDENT`,
+`ClaimType.UNKNOWN`, `ClaimEdge.dependency_kind`,
+`ClaimEdge.alternative_group_id`, `PatentClaim.preamble: string | null`,
+`PatentClaim.category`). Pinned v0.3.x SDKs deserialize the new
+fields as optional / "unknown" per the API's `_missing_` shim;
+upgrading to 0.3.2 surfaces them through the result object.
+
 ## [0.3.1] — 2026-05-20
 
 Docs-only release. Refreshes the npm landing-page README with
