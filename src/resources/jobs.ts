@@ -13,7 +13,7 @@
 
 import { APIConnectionError, APIError, APITimeoutError, ValidationError } from "../_errors.js";
 import type { HttpClient } from "../_http.js";
-import type { ExtractJob } from "./extract.js";
+import { jobFromBody, type ExtractJob } from "./extract.js";
 
 export type JobStatus = "queued" | "processing" | "completed" | "failed" | "cancelled";
 
@@ -250,18 +250,7 @@ export class JobsResource {
 // ── Helpers ─────────────────────────────────────────────────────────
 
 function jobFromResponse(body: unknown): ExtractJob {
-  if (!body || typeof body !== "object") {
-    throw new ValidationError("unexpected job response shape");
-  }
-  const obj = body as Record<string, unknown>;
-  return {
-    id: typeof obj["id"] === "string" ? obj["id"] : "",
-    status: typeof obj["status"] === "string" ? obj["status"] : "",
-    result: obj["result"] !== undefined ? (obj["result"] as Record<string, unknown> | null) : null,
-    errorCode: (obj["error_code"] as string | null | undefined) ?? null,
-    errorMessage: (obj["error_message"] as string | null | undefined) ?? null,
-    raw: obj,
-  };
+  return jobFromBody(body);
 }
 
 function sleep(ms: number): Promise<void> {

@@ -33,7 +33,7 @@ afterEach(() => {
 
 describe("jobs.get", () => {
   it("returns the job", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: "job_abc", status: "completed" }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { job_id: "job_abc", status: "completed" }));
     const client = new OCRQueen({ apiKey: VALID_KEY });
     const job = await client.jobs.get("job_abc");
     expect(job.id).toBe("job_abc");
@@ -61,8 +61,8 @@ describe("jobs.list", () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, {
         jobs: [
-          { id: "job_1", status: "completed" },
-          { id: "job_2", status: "queued" },
+          { job_id: "job_1", status: "completed" },
+          { job_id: "job_2", status: "queued" },
         ],
         next_cursor: "abc",
       }),
@@ -92,7 +92,7 @@ describe("jobs.list", () => {
 
   it("skips non-object jobs in the response", async () => {
     fetchMock.mockResolvedValueOnce(
-      jsonResponse(200, { jobs: [{ id: "job_1", status: "completed" }, "garbage"] }),
+      jsonResponse(200, { jobs: [{ job_id: "job_1", status: "completed" }, "garbage"] }),
     );
     const client = new OCRQueen({ apiKey: VALID_KEY });
     const page = await client.jobs.list();
@@ -104,7 +104,7 @@ describe("jobs.list", () => {
 
 describe("jobs.cancel", () => {
   it("returns updated job", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: "job_x", status: "cancelled" }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { job_id: "job_x", status: "cancelled" }));
     const client = new OCRQueen({ apiKey: VALID_KEY });
     const job = await client.jobs.cancel("job_x");
     expect(job.status).toBe("cancelled");
@@ -135,7 +135,7 @@ describe("jobs.purge", () => {
 
 describe("jobs.wait", () => {
   it("returns immediately when first poll is terminal", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: "job_done", status: "completed" }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { job_id: "job_done", status: "completed" }));
     const client = new OCRQueen({ apiKey: VALID_KEY });
     const job = await client.jobs.wait("job_done");
     expect(job.status).toBe("completed");
@@ -144,9 +144,9 @@ describe("jobs.wait", () => {
 
   it("polls until terminal", async () => {
     const states: ExtractJob[] = [
-      { id: "job_x", status: "queued", raw: {} },
-      { id: "job_x", status: "processing", raw: {} },
-      { id: "job_x", status: "completed", raw: {} },
+      { id: "job_x", status: "queued", domain: "general", cacheHit: false, raw: {} },
+      { id: "job_x", status: "processing", domain: "general", cacheHit: false, raw: {} },
+      { id: "job_x", status: "completed", domain: "general", cacheHit: false, raw: {} },
     ];
     const client = new OCRQueen({ apiKey: VALID_KEY });
     const getSpy = vi.spyOn(client.jobs, "get");
@@ -182,7 +182,13 @@ describe("jobs.wait", () => {
       status: "completed",
       raw: {},
     });
-    const j1 = await client.jobs.wait({ id: "job_x", status: "queued", raw: {} });
+    const j1 = await client.jobs.wait({
+      id: "job_x",
+      status: "queued",
+      domain: "general",
+      cacheHit: false,
+      raw: {},
+    });
     const j2 = await client.jobs.wait("job_x");
     expect(j1.status).toBe("completed");
     expect(j2.status).toBe("completed");

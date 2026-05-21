@@ -86,7 +86,7 @@ describe("resource access", () => {
 
 describe("client.extract.create", () => {
   it("sends multipart with file + options", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(202, { id: "job_abc", status: "queued" }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(202, { job_id: "job_abc", status: "queued" }));
     const client = new OCRQueen({ apiKey: VALID_KEY });
     const job = await client.extract.create({
       file: new Uint8Array([0x25, 0x50, 0x44, 0x46]), // %PDF
@@ -104,7 +104,7 @@ describe("client.extract.create", () => {
   });
 
   it("passes idempotency key as header", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(202, { id: "job_abc", status: "queued" }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(202, { job_id: "job_abc", status: "queued" }));
     const client = new OCRQueen({ apiKey: VALID_KEY });
     await client.extract.create({
       file: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
@@ -134,7 +134,7 @@ describe("client.extract.create", () => {
   });
 
   it("explicit options['extraction_profile'] wins over the profile arg", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(202, { id: "job_abc", status: "queued" }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(202, { job_id: "job_abc", status: "queued" }));
     const client = new OCRQueen({ apiKey: VALID_KEY });
     await client.extract.create({
       file: new Uint8Array([0x25, 0x50, 0x44, 0x46]),

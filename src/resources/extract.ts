@@ -44,15 +44,94 @@ export interface ExtractCreateOptions {
 export interface ExtractJob {
   id: string;
   status: string;
-  result?: Record<string, unknown> | null;
+  /**
+   * `general` (default) or `patent`. Branch on this to choose between
+   * the `document` and `patent` extraction fields.
+   */
+  domain: string;
+  /** Populated for `domain === "general"` jobs. */
+  document?: Record<string, unknown> | null;
+  /** Populated for `domain === "patent"` jobs. */
+  patent?: Record<string, unknown> | null;
+  /** Markdown rendering of the extraction (when the server emits one). */
+  markdown?: string | null;
+  /** True if the server returned a cached extraction without re-running. */
+  cacheHit: boolean;
   errorCode?: string | null;
   errorMessage?: string | null;
+  /**
+   * Legacy alias — same as `document` for general-domain jobs and
+   * `patent` for patent-domain jobs. Prefer `document` / `patent` so
+   * the dispatch is explicit at the call site.
+   */
+  result?: Record<string, unknown> | null;
   /** Full server response — kept for advanced callers who need a field
    * the typed surface doesn't expose. */
   raw: Record<string, unknown>;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
+
+/**
+ * MIME types for common upload extensions. We ship our own table because
+ * the platform's built-in detection misses `.pptx` / `.heic` and falls
+ * back to `application/octet-stream`, which the server rejects with
+ * `UNSUPPORTED_FILE_TYPE`. Keep in sync with the Python SDK.
+ */
+const MIME_BY_EXT: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".heic": "image/heic",
+  ".heif": "image/heif",
+  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+};
+
+function guessMime(filename: string): string {
+  const dot = filename.lastIndexOf(".");
+  if (dot < 0) return "application/octet-stream";
+  const ext = filename.slice(dot).toLowerCase();
+  return MIME_BY_EXT[ext] ?? "application/octet-stream";
+}
+
+/**
+ * Build an `ExtractJob` from a `JobResponse`-shaped server body.
+ *
+ * Centralized so every endpoint that returns this shape (`POST /v1/extract`,
+ * `GET /v1/jobs/{id}`, `GET /v1/jobs`, `DELETE /v1/jobs/{id}`) maps the
+ * wire fields the same way. Wire format uses `job_id` and a nested
+ * `error: { code, message }`; we surface those as `.id` and
+ * `.errorCode / .errorMessage` for ergonomics, preserving the raw body.
+ */
+export function jobFromBody(body: unknown): ExtractJob {
+  if (!body || typeof body !== "object") {
+    throw new ValidationError("unexpected job response shape");
+  }
+  const obj = body as Record<string, unknown>;
+  const errorRaw = obj["error"];
+  const error =
+    errorRaw && typeof errorRaw === "object" ? (errorRaw as Record<string, unknown>) : {};
+  const domain = typeof obj["domain"] === "string" ? (obj["domain"] as string) : "general";
+  const document =
+    obj["document"] !== undefined ? (obj["document"] as Record<string, unknown> | null) : null;
+  const patent =
+    obj["patent"] !== undefined ? (obj["patent"] as Record<string, unknown> | null) : null;
+  return {
+    id: typeof obj["job_id"] === "string" ? (obj["job_id"] as string) : "",
+    status: typeof obj["status"] === "string" ? (obj["status"] as string) : "",
+    domain,
+    document,
+    patent,
+    markdown: typeof obj["markdown"] === "string" ? (obj["markdown"] as string) : null,
+    cacheHit: obj["cache_hit"] === true,
+    errorCode: typeof error["code"] === "string" ? (error["code"] as string) : null,
+    errorMessage: typeof error["message"] === "string" ? (error["message"] as string) : null,
+    result: domain === "patent" ? patent : document,
+    raw: obj,
+  };
+}
 
 async function normalizeFile(
   input: FileInput,
@@ -76,17 +155,26 @@ async function normalizeFile(
     }
     const bytes = await readFile(input);
     const name = filenameHint ?? input.split("/").pop() ?? "upload.bin";
-    return { blob: new Blob([bytes]), filename: name };
+    return { blob: new Blob([bytes], { type: guessMime(name) }), filename: name };
   }
 
-  // Blob — already in the right shape, just size-check.
+  // Blob — already in the right shape, just size-check. Preserve any
+  // caller-set type; otherwise infer from the filename hint.
   if (input instanceof Blob) {
     if (input.size > MAX_UPLOAD_BYTES) {
       throw new ValidationError(
         `file is ${input.size} bytes — exceeds the ${MAX_UPLOAD_BYTES} byte limit`,
       );
     }
-    return { blob: input, filename: filenameHint ?? "upload.bin" };
+    const filename = filenameHint ?? "upload.bin";
+    if (input.type) {
+      return { blob: input, filename };
+    }
+    const buf = await input.arrayBuffer();
+    return {
+      blob: new Blob([buf], { type: guessMime(filename) }),
+      filename,
+    };
   }
 
   // Uint8Array (incl. Buffer).
@@ -96,13 +184,14 @@ async function normalizeFile(
         `file is ${input.byteLength} bytes — exceeds the ${MAX_UPLOAD_BYTES} byte limit`,
       );
     }
+    const filename = filenameHint ?? "upload.bin";
     // TS's lib.dom types narrow `BlobPart` to `Uint8Array<ArrayBuffer>`
     // while we accept the broader `Uint8Array<ArrayBufferLike>` (which
     // includes SharedArrayBuffer). Wrap in `new Uint8Array(input)` to
     // copy into a guaranteed-ArrayBuffer-backed view.
     return {
-      blob: new Blob([new Uint8Array(input)]),
-      filename: filenameHint ?? "upload.bin",
+      blob: new Blob([new Uint8Array(input)], { type: guessMime(filename) }),
+      filename,
     };
   }
 
@@ -138,16 +227,7 @@ export class ExtractResource {
       formBody: form,
       ...(opts.idempotencyKey !== undefined ? { idempotencyKey: opts.idempotencyKey } : {}),
     });
-    const body = (await response.json()) as Record<string, unknown>;
-
-    return {
-      id: typeof body["id"] === "string" ? body["id"] : "",
-      status: typeof body["status"] === "string" ? body["status"] : "",
-      result:
-        body["result"] !== undefined ? (body["result"] as Record<string, unknown> | null) : null,
-      errorCode: (body["error_code"] as string | null | undefined) ?? null,
-      errorMessage: (body["error_message"] as string | null | undefined) ?? null,
-      raw: body,
-    };
+    const body = (await response.json()) as unknown;
+    return jobFromBody(body);
   }
 }
