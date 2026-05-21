@@ -13,7 +13,7 @@
 
 import { APIConnectionError, APIError, APITimeoutError, ValidationError } from "../_errors.js";
 import type { HttpClient } from "../_http.js";
-import { jobFromBody, type ExtractJob } from "./extract.js";
+import { type ExtractJob, jobFromBody } from "./extract.js";
 
 export type JobStatus = "queued" | "processing" | "completed" | "failed" | "cancelled";
 
