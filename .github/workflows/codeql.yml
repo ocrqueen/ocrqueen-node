@@ -22,6 +22,12 @@ jobs:
     permissions:
       security-events: write
       contents: read
+      pull-requests: read  # required for pr-diff-range alert filtering
+    env:
+      # Disable diff-informed mode — the action's pr-diff-range extension
+      # is generating malformed "undefined" rows on PRs (upstream bug in
+      # github/codeql-action@4f3212b). Re-enable when fixed upstream.
+      CODEQL_ACTION_DIFF_INFORMED_QUERIES: "false"
     strategy:
       fail-fast: false
       matrix:

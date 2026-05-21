@@ -8,4 +8,4 @@
  * Bump in lockstep with the `version` field in `package.json` — the CI
  * release workflow asserts the two match before publishing.
  */
-export const VERSION = "0.3.2";
+export const VERSION = "0.4.0";
