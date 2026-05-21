@@ -22,6 +22,7 @@ jobs:
     permissions:
       security-events: write
       contents: read
+      pull-requests: read  # required for pr-diff-range alert filtering
     strategy:
       fail-fast: false
       matrix:
