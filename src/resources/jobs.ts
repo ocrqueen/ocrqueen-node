@@ -136,10 +136,9 @@ export class JobsResource {
   /**
    * Download bytes from an image-proxy URL referenced in an extraction result.
    *
-   * The API emits stable proxy paths on patent figures
-   * (`drawings[i].image_url`) and general image blocks
+   * The API emits stable proxy paths on image blocks
    * (`pages[].blocks[].url`) of the form
-   * `/v1/jobs/{job_id}/{figures|images}/{id}`. Hitting them with the
+   * `/v1/jobs/{job_id}/images/{id}`. Hitting them with the
    * SDK's API key returns a 302 redirect to a short-lived signed R2
    * URL; this helper performs the two-step dance and returns the
    * raw bytes as a `Uint8Array`. Accepts either a relative path or

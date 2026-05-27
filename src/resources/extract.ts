@@ -19,19 +19,15 @@ import type { HttpClient } from "../_http.js";
 /** Max upload — matches the server's hard cap so we fail fast locally. */
 export const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
 
-export type ExtractionProfile = "standard" | "advanced";
-
 /** What a file upload looks like in practice. */
 export type FileInput = Uint8Array | string | Blob;
 
 export interface ExtractCreateOptions {
   file: FileInput;
-  /** `standard` ($0.005/page) or `advanced` ($0.015/page). */
-  profile?: ExtractionProfile;
   /**
-   * Extra `ExtractOptions` — `callback_url`, `bypass_cache`,
-   * `retain_hours`, `result_retain_hours` (0-168, defaults to
-   * `retain_hours`), `storage_destination_id`. Server validates.
+   * `ExtractOptions` — `callback_url`, `bypass_cache`, `retain_hours`,
+   * `result_retain_hours` (0-168, defaults to `retain_hours`),
+   * `storage_destination_id`. Server validates.
    * See /docs/data-retention for the retention-related options.
    */
   options?: Record<string, unknown>;
@@ -44,26 +40,15 @@ export interface ExtractCreateOptions {
 export interface ExtractJob {
   id: string;
   status: string;
-  /**
-   * `general` (default) or `patent`. Branch on this to choose between
-   * the `document` and `patent` extraction fields.
-   */
-  domain: string;
-  /** Populated for `domain === "general"` jobs. */
+  /** Extraction result — populated when status === "completed". */
   document?: Record<string, unknown> | null;
-  /** Populated for `domain === "patent"` jobs. */
-  patent?: Record<string, unknown> | null;
   /** Markdown rendering of the extraction (when the server emits one). */
   markdown?: string | null;
   /** True if the server returned a cached extraction without re-running. */
   cacheHit: boolean;
   errorCode?: string | null;
   errorMessage?: string | null;
-  /**
-   * Legacy alias — same as `document` for general-domain jobs and
-   * `patent` for patent-domain jobs. Prefer `document` / `patent` so
-   * the dispatch is explicit at the call site.
-   */
+  /** Legacy alias for `document`. */
   result?: Record<string, unknown> | null;
   /** Full server response — kept for advanced callers who need a field
    * the typed surface doesn't expose. */
@@ -113,22 +98,17 @@ export function jobFromBody(body: unknown): ExtractJob {
   const errorRaw = obj["error"];
   const error =
     errorRaw && typeof errorRaw === "object" ? (errorRaw as Record<string, unknown>) : {};
-  const domain = typeof obj["domain"] === "string" ? (obj["domain"] as string) : "general";
   const document =
     obj["document"] !== undefined ? (obj["document"] as Record<string, unknown> | null) : null;
-  const patent =
-    obj["patent"] !== undefined ? (obj["patent"] as Record<string, unknown> | null) : null;
   return {
     id: typeof obj["job_id"] === "string" ? (obj["job_id"] as string) : "",
     status: typeof obj["status"] === "string" ? (obj["status"] as string) : "",
-    domain,
     document,
-    patent,
     markdown: typeof obj["markdown"] === "string" ? (obj["markdown"] as string) : null,
     cacheHit: obj["cache_hit"] === true,
     errorCode: typeof error["code"] === "string" ? (error["code"] as string) : null,
     errorMessage: typeof error["message"] === "string" ? (error["message"] as string) : null,
-    result: domain === "patent" ? patent : document,
+    result: document,
     raw: obj,
   };
 }
@@ -210,16 +190,11 @@ export class ExtractResource {
   async create(opts: ExtractCreateOptions): Promise<ExtractJob> {
     const { blob, filename } = await normalizeFile(opts.file, opts.filename);
 
-    // Merge the simple `profile` arg into the options dict. Explicit
-    // options["extraction_profile"] wins if both are passed.
-    const mergedOptions: Record<string, unknown> = { ...(opts.options ?? {}) };
-    if (mergedOptions["extraction_profile"] === undefined) {
-      mergedOptions["extraction_profile"] = opts.profile ?? "standard";
-    }
-
     const form = new FormData();
     form.append("file", blob, filename);
-    form.append("options", JSON.stringify(mergedOptions));
+    if (opts.options && Object.keys(opts.options).length > 0) {
+      form.append("options", JSON.stringify(opts.options));
+    }
 
     const response = await this.#http.request({
       method: "POST",

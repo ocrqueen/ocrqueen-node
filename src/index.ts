@@ -28,7 +28,6 @@ export {
 export type {
   ExtractCreateOptions,
   ExtractJob,
-  ExtractionProfile,
   FileInput,
 } from "./resources/extract.js";
 

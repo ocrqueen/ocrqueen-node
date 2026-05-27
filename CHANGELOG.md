@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-05-27
+
+Tracks the V3 cutover on the API: one unified extraction pipeline, one
+flat per-page rate, no profile/domain axis.
+
+### Removed (breaking)
+
+- `profile` field on `client.extract.create({...})` — the API no longer
+  accepts `extraction_profile`. There is one pipeline; every document
+  gets the full extraction (text, tables, math, code, diagrams as
+  graphs, reference linking, bounding boxes).
+- `ExtractionProfile` type export.
+- `ExtractJob.domain` and `ExtractJob.patent` fields — the response
+  shape collapses to `document` + `markdown` for every job. The
+  separate patent-domain response is gone.
+- The `ExtractJob.result` field is retained as a thin alias for
+  `document` so existing call sites don't break.
+
+### Migration
+
+```typescript
+// before (v0.5.x)
+const job = await client.extract.create({ file: buf, profile: "advanced" });
+
+// after (v0.6.x) — drop the field, you get the same pipeline either way
+const job = await client.extract.create({ file: buf });
+```
+
+If you were passing `extraction_profile` or `domain` inside `options`,
+remove those keys — the server now rejects them.
+
 ## [0.5.1] — 2026-05-21
 
 Republish of 0.5.0 — the v0.5.0 tag failed CI on a biome import-sort
