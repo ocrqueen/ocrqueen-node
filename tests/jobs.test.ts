@@ -144,9 +144,9 @@ describe("jobs.wait", () => {
 
   it("polls until terminal", async () => {
     const states: ExtractJob[] = [
-      { id: "job_x", status: "queued", domain: "general", cacheHit: false, raw: {} },
-      { id: "job_x", status: "processing", domain: "general", cacheHit: false, raw: {} },
-      { id: "job_x", status: "completed", domain: "general", cacheHit: false, raw: {} },
+      { id: "job_x", status: "queued", cacheHit: false, raw: {} },
+      { id: "job_x", status: "processing", cacheHit: false, raw: {} },
+      { id: "job_x", status: "completed", cacheHit: false, raw: {} },
     ];
     const client = new OCRQueen({ apiKey: VALID_KEY });
     const getSpy = vi.spyOn(client.jobs, "get");
@@ -185,7 +185,6 @@ describe("jobs.wait", () => {
     const j1 = await client.jobs.wait({
       id: "job_x",
       status: "queued",
-      domain: "general",
       cacheHit: false,
       raw: {},
     });

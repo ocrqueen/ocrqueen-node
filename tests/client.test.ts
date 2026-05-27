@@ -90,17 +90,27 @@ describe("client.extract.create", () => {
     const client = new OCRQueen({ apiKey: VALID_KEY });
     const job = await client.extract.create({
       file: new Uint8Array([0x25, 0x50, 0x44, 0x46]), // %PDF
-      profile: "advanced",
+      options: { retain_hours: 24 },
     });
     expect(job.id).toBe("job_abc");
     expect(job.status).toBe("queued");
 
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     expect(init.body).toBeInstanceOf(FormData);
-    // Pull the FormData back out and read its parts
     const form = init.body as FormData;
     expect(form.get("file")).toBeInstanceOf(Blob);
-    expect(form.get("options")).toBe('{"extraction_profile":"advanced"}');
+    expect(form.get("options")).toBe('{"retain_hours":24}');
+  });
+
+  it("omits the options part when no options are passed", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(202, { job_id: "job_abc", status: "queued" }));
+    const client = new OCRQueen({ apiKey: VALID_KEY });
+    await client.extract.create({
+      file: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
+    });
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const form = init.body as FormData;
+    expect(form.get("options")).toBeNull();
   });
 
   it("passes idempotency key as header", async () => {
@@ -131,18 +141,5 @@ describe("client.extract.create", () => {
     await expect(
       client.extract.create({ file: new Uint8Array([0x25, 0x50, 0x44, 0x46]) }),
     ).rejects.toBeInstanceOf(NotFoundError);
-  });
-
-  it("explicit options['extraction_profile'] wins over the profile arg", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(202, { job_id: "job_abc", status: "queued" }));
-    const client = new OCRQueen({ apiKey: VALID_KEY });
-    await client.extract.create({
-      file: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
-      profile: "advanced",
-      options: { extraction_profile: "standard" },
-    });
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
-    const form = init.body as FormData;
-    expect(form.get("options")).toBe('{"extraction_profile":"standard"}');
   });
 });

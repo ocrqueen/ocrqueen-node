@@ -14,7 +14,7 @@ pnpm add ocrqueen
 yarn add ocrqueen
 ```
 
-Requires Node.js 18 or newer.
+Requires Node.js 20 or newer.
 
 ## Supported formats
 
@@ -25,8 +25,8 @@ Requires Node.js 18 or newer.
 | Images | **PNG**, **JPEG**, **WebP**, **HEIC** / **HEIF** (iPhone photos) |
 
 The API returns structured JSON + Markdown for every supported type —
-text, tables, images, and (with `profile: "advanced"`) diagram graph
-extraction and image alt-text.
+text, tables, images, math, code, diagram graphs, and reference linking
+— from a single unified pipeline. No profiles, no toggles.
 
 ## Quickstart
 
@@ -40,8 +40,8 @@ const job = await client.extract.create({
   file: fs.readFileSync("paper.pdf"),
 });
 
-const result = await client.jobs.wait(job);
-console.log(result.result?.markdown);
+const final = await client.jobs.wait(job);
+console.log(final.markdown);
 ```
 
 Get an API key from [dashboard.ocrqueen.com](https://ocrqueen.com/dashboard/keys).
@@ -57,51 +57,29 @@ await client.extract.create({ file: fs.readFileSync("receipt.heic") });
 
 // Scanned document images
 await client.extract.create({ file: fs.readFileSync("invoice.png") });
-
-// Deeper extraction profile — diagrams, image alt-text, OCR on
-// embedded text
-await client.extract.create({
-  file: fs.readFileSync("paper.pdf"),
-  profile: "advanced",
-});
 ```
 
-### Patent extraction (`domain: "patent"`)
+### Fetching extracted images
 
-Route a PPTX or PDF through the patent-specific pipeline: region
-classification (cover / abstract / drawings / claims / references),
-Gemini cover parser, LibreOffice rasterisation for EMF/WMF figures,
-cross-figure numeral resolution, and an honest per-stage
-`faithfulness_score`. Billed flat at $0.05/page regardless of profile.
+Image blocks carry a stable proxy URL — it never expires until the
+underlying object is purged by your retention window. `fetchImage()`
+handles the 302 → signed-storage dance for you and returns raw bytes.
 
 ```typescript
 import fs from "node:fs";
 
-const job = await client.extract.create({
-  file: fs.readFileSync("invention-disclosure.pptx"),
-  options: { domain: "patent" },
-});
-const done = await client.jobs.wait(job);
-const patent = done.result as Record<string, unknown>; // PatentExtractionResponse shape
-
-console.log((patent.source as any).input_kind);        // "invention_disclosure" | "published_patent" | "unknown"
-console.log((patent.extraction as any).faithfulness_score);
-
-// Figures carry a stable proxy URL — never expires until the underlying
-// object is purged by your retention window. fetchImage() handles the
-// 302 → signed-storage dance and returns a Uint8Array.
-for (const fig of patent.drawings as Array<Record<string, unknown>>) {
-  const bytes = await client.jobs.fetchImage(fig.image_url as string);
-  fs.writeFileSync(
-    `${String(fig.figure_number).replace(/\s+/g, "_")}.png`,
-    bytes,
-  );
+const final = await client.jobs.wait(job);
+const pages = (final.document?.pages ?? []) as Array<Record<string, unknown>>;
+for (const page of pages) {
+  const blocks = (page.blocks ?? []) as Array<Record<string, unknown>>;
+  for (const block of blocks) {
+    if (block.kind === "image") {
+      const bytes = await client.jobs.fetchImage(block.url as string);
+      fs.writeFileSync(`${block.id}.png`, bytes);
+    }
+  }
 }
 ```
-
-The same `fetchImage()` helper works for general-domain `ImageBlock`
-URLs (`pages[].blocks[].url`) — useful for snapshotting all figures
-from a job into your own pipeline.
 
 ## Documentation
 
