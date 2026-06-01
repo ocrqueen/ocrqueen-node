@@ -76,7 +76,7 @@
     "@types/node": "^20.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
+    "vitest": "^4.1.0"
   },
   "//9": "── Force pnpm. npm/yarn would silently produce a different",
   "//10": "── lock file and we'd lose reproducibility.",
