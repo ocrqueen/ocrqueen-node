@@ -75,7 +75,7 @@
     "@biomejs/biome": "^1.9.0",
     "@types/node": "^20.0.0",
     "tsup": "^8.3.0",
-    "typescript": "^5.6.0",
+    "typescript": "^7.0.2",
     "vitest": "^2.1.0"
   },
   "//9": "── Force pnpm. npm/yarn would silently produce a different",
