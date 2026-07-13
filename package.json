@@ -73,7 +73,7 @@
   "//8": "── Dev deps pinned to ranges; lock file pins the exact version.",
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^26.1.1",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
